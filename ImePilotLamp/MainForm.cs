@@ -1,0 +1,265 @@
+using System.Drawing.Drawing2D;
+
+namespace ImePilotLamp;
+
+/// <summary>
+/// The main pilot lamp indicator form.
+/// Displays a colored "lamp" that glows green when IME is ON and dims when IME is OFF.
+/// The window is always on top, borderless, and can be dragged anywhere on screen.
+/// Right-click shows a context menu with an Exit option.
+/// </summary>
+public partial class MainForm : Form
+{
+    private readonly System.Windows.Forms.Timer _pollTimer;
+    private readonly NotifyIcon _notifyIcon;
+
+    private bool _imeOn;
+    private Point _dragOffset;
+    private bool _dragging;
+
+    // Remember the last foreground window that wasn't our own indicator
+    private IntPtr _lastForeignWindow = IntPtr.Zero;
+
+    public MainForm()
+    {
+        InitializeComponent();
+
+        // Poll IME state every 100 ms
+        _pollTimer = new System.Windows.Forms.Timer { Interval = 100 };
+        _pollTimer.Tick += PollTimer_Tick;
+        _pollTimer.Start();
+
+        // System tray icon so the app is accessible even when the window is hidden
+        _notifyIcon = new NotifyIcon { Text = "IME Pilot Lamp Indicator", Visible = true };
+        UpdateTrayIcon();
+
+        var contextMenu = new ContextMenuStrip();
+        contextMenu.Items.Add("Show / Hide", null, (_, _) => ToggleVisibility());
+        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
+
+        _notifyIcon.ContextMenuStrip = contextMenu;
+        _notifyIcon.DoubleClick += (_, _) => ToggleVisibility();
+
+        // Draw the initial (OFF) state
+        UpdateImeState();
+    }
+
+    // -----------------------------------------------------------------------
+    // IME state detection
+    // -----------------------------------------------------------------------
+
+    private void PollTimer_Tick(object? sender, EventArgs e) => UpdateImeState();
+
+    private void UpdateImeState()
+    {
+        bool newState = GetImeOpenStatus();
+        if (newState == _imeOn) return;
+
+        _imeOn = newState;
+        UpdateTrayIcon();
+        Invalidate();
+    }
+
+    private bool GetImeOpenStatus()
+    {
+        IntPtr foreground = NativeMethods.GetForegroundWindow();
+
+        // Ignore our own window to avoid disturbing the last-known state
+        if (foreground == Handle || foreground == IntPtr.Zero)
+            foreground = _lastForeignWindow;
+        else
+            _lastForeignWindow = foreground;
+
+        if (foreground == IntPtr.Zero) return false;
+
+        IntPtr imeWnd = NativeMethods.ImmGetDefaultIMEWnd(foreground);
+        if (imeWnd == IntPtr.Zero) return false;
+
+        IntPtr result = NativeMethods.SendMessage(
+            imeWnd,
+            NativeMethods.WM_IME_CONTROL,
+            (IntPtr)NativeMethods.IMC_GETOPENSTATUS,
+            IntPtr.Zero);
+
+        return result != IntPtr.Zero;
+    }
+
+    // -----------------------------------------------------------------------
+    // Painting – the pilot lamp
+    // -----------------------------------------------------------------------
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        var g = e.Graphics;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+        // --- Background ---
+        g.Clear(Color.FromArgb(28, 28, 28));
+
+        // --- Lamp circle (centred horizontally, near the top) ---
+        int lampDiameter = 44;
+        int lampX = (ClientSize.Width - lampDiameter) / 2;
+        int lampY = 10;
+        var lampRect = new RectangleF(lampX, lampY, lampDiameter, lampDiameter);
+
+        if (_imeOn)
+        {
+            // Outer glow
+            int glowPad = 6;
+            var glowRect = new RectangleF(
+                lampX - glowPad, lampY - glowPad,
+                lampDiameter + glowPad * 2, lampDiameter + glowPad * 2);
+            using var glowPath = new System.Drawing.Drawing2D.GraphicsPath();
+            glowPath.AddEllipse(glowRect);
+            using var glowBrush = new PathGradientBrush(glowPath)
+            {
+                CenterColor = Color.FromArgb(160, Color.LimeGreen),
+                SurroundColors = new[] { Color.Transparent }
+            };
+            g.FillEllipse(glowBrush, glowRect);
+
+            // Lamp body – radial gradient: white centre → bright green edge
+            using var lampPath = new System.Drawing.Drawing2D.GraphicsPath();
+            lampPath.AddEllipse(lampRect);
+            using var lampBrush = new PathGradientBrush(lampPath)
+            {
+                CenterPoint = new PointF(lampX + lampDiameter * 0.38f, lampY + lampDiameter * 0.32f),
+                CenterColor = Color.White,
+                SurroundColors = new[] { Color.FromArgb(0, 180, 0) }
+            };
+            g.FillEllipse(lampBrush, lampRect);
+        }
+        else
+        {
+            // Dark, unlit lamp
+            using var bodyBrush = new SolidBrush(Color.FromArgb(55, 55, 55));
+            g.FillEllipse(bodyBrush, lampRect);
+            using var rimPen = new Pen(Color.FromArgb(80, 80, 80), 1f);
+            g.DrawEllipse(rimPen, lampRect);
+
+            // Small highlight to give a "glass" feel even when off
+            var hlRect = new RectangleF(lampX + 7, lampY + 6, lampDiameter * 0.35f, lampDiameter * 0.25f);
+            using var hlBrush = new SolidBrush(Color.FromArgb(30, 255, 255, 255));
+            g.FillEllipse(hlBrush, hlRect);
+        }
+
+        // --- Status text ---
+        string statusText = _imeOn ? "ON" : "OFF";
+        Color textColor = _imeOn ? Color.FromArgb(100, 255, 100) : Color.FromArgb(110, 110, 110);
+        using var font = new Font("Segoe UI", 9.5f, FontStyle.Bold, GraphicsUnit.Point);
+        using var textBrush = new SolidBrush(textColor);
+        var textSize = g.MeasureString(statusText, font);
+        float textX = (ClientSize.Width - textSize.Width) / 2f;
+        float textY = lampY + lampDiameter + 5;
+        g.DrawString(statusText, font, textBrush, textX, textY);
+
+        // --- Thin border around the whole window ---
+        using var borderPen = new Pen(Color.FromArgb(60, 60, 60), 1f);
+        g.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+    }
+
+    // -----------------------------------------------------------------------
+    // Tray icon – generated programmatically from current state
+    // -----------------------------------------------------------------------
+
+    private void UpdateTrayIcon()
+    {
+        var oldIcon = _notifyIcon.Icon;
+
+        using var bmp = new Bitmap(16, 16);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.Clear(Color.Transparent);
+            using var brush = new SolidBrush(_imeOn ? Color.LimeGreen : Color.FromArgb(90, 90, 90));
+            g.FillEllipse(brush, 1, 1, 14, 14);
+        }
+
+        IntPtr hIcon = bmp.GetHicon();
+        _notifyIcon.Icon = Icon.FromHandle(hIcon);
+        NativeMethods.DestroyIcon(hIcon);
+        _notifyIcon.Text = _imeOn ? "IME: ON" : "IME: OFF";
+
+        oldIcon?.Dispose();
+    }
+
+    // -----------------------------------------------------------------------
+    // Mouse – dragging the borderless window
+    // -----------------------------------------------------------------------
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            _dragging = true;
+            _dragOffset = e.Location;
+        }
+        base.OnMouseDown(e);
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        if (_dragging)
+            Location = new Point(
+                Location.X + e.X - _dragOffset.X,
+                Location.Y + e.Y - _dragOffset.Y);
+        base.OnMouseMove(e);
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        _dragging = false;
+        base.OnMouseUp(e);
+    }
+
+    // -----------------------------------------------------------------------
+    // Window closing / exit
+    // -----------------------------------------------------------------------
+
+    /// <summary>Minimise to tray instead of closing when the user presses the close button.</summary>
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            Visible = false;
+        }
+        else
+        {
+            CleanUp();
+        }
+        base.OnFormClosing(e);
+    }
+
+    private void ToggleVisibility()
+    {
+        Visible = !Visible;
+        if (Visible) BringToFront();
+    }
+
+    private void ExitApplication()
+    {
+        CleanUp();
+        Application.Exit();
+    }
+
+    private void CleanUp()
+    {
+        _pollTimer.Stop();
+        _notifyIcon.Visible = false;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _pollTimer?.Dispose();
+            _notifyIcon?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+}
