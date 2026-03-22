@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace ImePilotLamp;
 
@@ -20,6 +21,16 @@ public partial class MainForm : Form
     // Remember the last foreground window that wasn't our own indicator
     private IntPtr _lastForeignWindow = IntPtr.Zero;
 
+    // Settings
+    private readonly AppSettings _settings = AppSettings.Load();
+
+    // Follow-focus mouse hook state
+    private NativeMethods.HookProc? _mouseHookProc; // Held to prevent GC collection
+    private IntPtr _mouseHook = IntPtr.Zero;
+    private bool _pendingMouseClick;
+    private Point _mouseClickPoint;
+    private DateTime _mouseClickTime;
+
     public MainForm()
     {
         InitializeComponent();
@@ -36,6 +47,8 @@ public partial class MainForm : Form
         var contextMenu = new ContextMenuStrip();
         contextMenu.Items.Add("Show / Hide", null, (_, _) => ToggleVisibility());
         contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add("設定...", null, (_, _) => OpenSettings());
+        contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
 
         _notifyIcon.ContextMenuStrip = contextMenu;
@@ -43,6 +56,9 @@ public partial class MainForm : Form
 
         // Draw the initial (OFF) state
         UpdateImeState();
+
+        if (_settings.FollowFocus)
+            InstallMouseHook();
     }
 
     // -----------------------------------------------------------------------
@@ -69,7 +85,18 @@ public partial class MainForm : Form
         if (foreground == Handle || foreground == IntPtr.Zero)
             foreground = _lastForeignWindow;
         else
-            _lastForeignWindow = foreground;
+        {
+            if (foreground != _lastForeignWindow)
+            {
+                if (_settings.FollowFocus && _pendingMouseClick &&
+                    (DateTime.UtcNow - _mouseClickTime).TotalSeconds < 2.0)
+                {
+                    MoveNearCursor(_mouseClickPoint);
+                }
+                _pendingMouseClick = false;
+                _lastForeignWindow = foreground;
+            }
+        }
 
         if (foreground == IntPtr.Zero) return false;
 
@@ -217,6 +244,86 @@ public partial class MainForm : Form
     }
 
     // -----------------------------------------------------------------------
+    // Follow-focus – low-level mouse hook
+    // -----------------------------------------------------------------------
+
+    private void InstallMouseHook()
+    {
+        if (_mouseHook != IntPtr.Zero) return;
+        _mouseHookProc = MouseHookCallback;
+        _mouseHook = NativeMethods.SetWindowsHookEx(
+            NativeMethods.WH_MOUSE_LL, _mouseHookProc, IntPtr.Zero, 0);
+    }
+
+    private void UninstallMouseHook()
+    {
+        if (_mouseHook == IntPtr.Zero) return;
+        NativeMethods.UnhookWindowsHookEx(_mouseHook);
+        _mouseHook = IntPtr.Zero;
+        _mouseHookProc = null;
+    }
+
+    private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0 && (int)wParam == NativeMethods.WM_LBUTTONDOWN)
+        {
+            var hs = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
+            _pendingMouseClick = true;
+            _mouseClickPoint = new Point(hs.pt.x, hs.pt.y);
+            _mouseClickTime = DateTime.UtcNow;
+        }
+        return NativeMethods.CallNextHookEx(_mouseHook, nCode, wParam, lParam);
+    }
+
+    private void MoveNearCursor(Point cursorPos)
+    {
+        const int offsetY = 20;
+
+        var screen = Screen.FromPoint(cursorPos);
+        var workArea = screen.WorkingArea;
+
+        int x = cursorPos.X - Width / 2;
+        int y = cursorPos.Y + offsetY;
+
+        // Clamp horizontally within the working area
+        x = Math.Max(workArea.Left, Math.Min(x, workArea.Right - Width));
+
+        // Prefer below the cursor; fall back to above if it would go off-screen
+        if (y + Height > workArea.Bottom)
+            y = cursorPos.Y - Height - offsetY;
+
+        // Final vertical clamp
+        y = Math.Max(workArea.Top, Math.Min(y, workArea.Bottom - Height));
+
+        Location = new Point(x, y);
+        if (!Visible) Visible = true;
+        BringToFront();
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings
+    // -----------------------------------------------------------------------
+
+    private void OpenSettings()
+    {
+        using var form = new SettingsForm(_settings);
+        if (form.ShowDialog(this) == DialogResult.OK)
+        {
+            _settings.FollowFocus = form.FollowFocus;
+            _settings.Save();
+            ApplySettings();
+        }
+    }
+
+    private void ApplySettings()
+    {
+        if (_settings.FollowFocus)
+            InstallMouseHook();
+        else
+            UninstallMouseHook();
+    }
+
+    // -----------------------------------------------------------------------
     // Window closing / exit
     // -----------------------------------------------------------------------
 
@@ -250,6 +357,7 @@ public partial class MainForm : Form
     private void CleanUp()
     {
         _pollTimer.Stop();
+        UninstallMouseHook();
         _notifyIcon.Visible = false;
     }
 
