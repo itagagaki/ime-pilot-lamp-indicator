@@ -12,6 +12,10 @@ partial class SettingsForm
     private System.Windows.Forms.Label _lblFadeDescription;
     private System.Windows.Forms.TrackBar _trkFadeOut;
     private System.Windows.Forms.Label _lblFadeValue;
+    private System.Windows.Forms.GroupBox _grpBackground;
+    private System.Windows.Forms.Panel _pnlBackColor;
+    private System.Windows.Forms.Button _btnPickColor;
+    private System.Windows.Forms.CheckBox _chkTransparent;
 
     protected override void Dispose(bool disposing)
     {
@@ -28,11 +32,16 @@ partial class SettingsForm
         _lblFadeDescription = new System.Windows.Forms.Label();
         _trkFadeOut = new System.Windows.Forms.TrackBar();
         _lblFadeValue = new System.Windows.Forms.Label();
+        _grpBackground = new System.Windows.Forms.GroupBox();
+        _pnlBackColor = new System.Windows.Forms.Panel();
+        _btnPickColor = new System.Windows.Forms.Button();
+        _chkTransparent = new System.Windows.Forms.CheckBox();
         _btnOk = new System.Windows.Forms.Button();
         _btnCancel = new System.Windows.Forms.Button();
         _grpFollowFocus.SuspendLayout();
         _grpFadeOut.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_trkFadeOut).BeginInit();
+        _grpBackground.SuspendLayout();
         SuspendLayout();
 
         // _grpFollowFocus
@@ -92,9 +101,40 @@ partial class SettingsForm
         _lblFadeValue.Size = new System.Drawing.Size(94, 20);
         _lblFadeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
+        // _grpBackground
+        _grpBackground.Controls.Add(_pnlBackColor);
+        _grpBackground.Controls.Add(_btnPickColor);
+        _grpBackground.Controls.Add(_chkTransparent);
+        _grpBackground.Location = new System.Drawing.Point(12, 244);
+        _grpBackground.Name = "_grpBackground";
+        _grpBackground.Size = new System.Drawing.Size(400, 62);
+        _grpBackground.TabStop = false;
+        _grpBackground.Text = "背景色";
+
+        // _pnlBackColor
+        _pnlBackColor.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+        _pnlBackColor.Location = new System.Drawing.Point(12, 22);
+        _pnlBackColor.Name = "_pnlBackColor";
+        _pnlBackColor.Size = new System.Drawing.Size(30, 28);
+        _pnlBackColor.TabStop = false;
+
+        // _btnPickColor
+        _btnPickColor.Location = new System.Drawing.Point(50, 20);
+        _btnPickColor.Name = "_btnPickColor";
+        _btnPickColor.Size = new System.Drawing.Size(110, 28);
+        _btnPickColor.TabIndex = 4;
+        _btnPickColor.Text = "色を選択(&C)...";
+
+        // _chkTransparent
+        _chkTransparent.AutoSize = true;
+        _chkTransparent.Location = new System.Drawing.Point(174, 24);
+        _chkTransparent.Name = "_chkTransparent";
+        _chkTransparent.TabIndex = 5;
+        _chkTransparent.Text = "透過（背景なし）(&T)";
+
         // _btnOk
         _btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
-        _btnOk.Location = new System.Drawing.Point(228, 248);
+        _btnOk.Location = new System.Drawing.Point(228, 318);
         _btnOk.Name = "_btnOk";
         _btnOk.Size = new System.Drawing.Size(80, 26);
         _btnOk.TabIndex = 2;
@@ -102,7 +142,7 @@ partial class SettingsForm
 
         // _btnCancel
         _btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-        _btnCancel.Location = new System.Drawing.Point(316, 248);
+        _btnCancel.Location = new System.Drawing.Point(316, 318);
         _btnCancel.Name = "_btnCancel";
         _btnCancel.Size = new System.Drawing.Size(96, 26);
         _btnCancel.TabIndex = 3;
@@ -113,9 +153,10 @@ partial class SettingsForm
         CancelButton = _btnCancel;
         AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        ClientSize = new System.Drawing.Size(424, 286);
+        ClientSize = new System.Drawing.Size(424, 356);
         Controls.Add(_grpFollowFocus);
         Controls.Add(_grpFadeOut);
+        Controls.Add(_grpBackground);
         Controls.Add(_btnOk);
         Controls.Add(_btnCancel);
         FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -130,6 +171,8 @@ partial class SettingsForm
         _grpFadeOut.ResumeLayout(false);
         _grpFadeOut.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)_trkFadeOut).EndInit();
+        _grpBackground.ResumeLayout(false);
+        _grpBackground.PerformLayout();
         ResumeLayout(false);
     }
 }

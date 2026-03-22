@@ -22,6 +22,10 @@ public partial class MainForm : Form
     private const double FadeMinOpacity  = 0.0;
     private const int    FadeIntervalMs  = 50;
 
+    // Chroma-key colour used when TransparentBackground is active.
+    // Chosen to be far from any colour that appears in the lamp drawing.
+    private static readonly Color TransparencyKeyColor = Color.FromArgb(1, 0, 1);
+
     private bool _imeOn;
     private Point _dragOffset;
     private bool _dragging;
@@ -149,7 +153,9 @@ public partial class MainForm : Form
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
         // --- Background ---
-        g.Clear(Color.FromArgb(28, 28, 28));
+        g.Clear(_settings.TransparentBackground
+            ? TransparencyKeyColor
+            : Color.FromArgb(_settings.BackColorArgb));
 
         // --- Lamp circle (centred horizontally, near the top) ---
         int lampDiameter = (int)(44 * scale);
@@ -209,8 +215,11 @@ public partial class MainForm : Form
         g.DrawString(statusText, font, textBrush, textX, textY);
 
         // --- Thin border around the whole window ---
-        using var borderPen = new Pen(Color.FromArgb(60, 60, 60), 1f);
-        g.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+        if (!_settings.TransparentBackground)
+        {
+            using var borderPen = new Pen(Color.FromArgb(60, 60, 60), 1f);
+            g.DrawRectangle(borderPen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -423,6 +432,8 @@ public partial class MainForm : Form
             {
                 _settings.FollowFocus = form.FollowFocus;
                 _settings.FadeOutSeconds = form.FadeOutSeconds;
+                _settings.BackColorArgb = form.BackColorArgb;
+                _settings.TransparentBackground = form.TransparentBackground;
                 _settings.Save();
                 ApplySettings();
             }
@@ -439,6 +450,7 @@ public partial class MainForm : Form
             InstallMouseHook();
         else
             UninstallMouseHook();
+        ApplyBackground();
     }
 
     // -----------------------------------------------------------------------
@@ -493,6 +505,12 @@ public partial class MainForm : Form
         ClientSize = new Size((int)Math.Round(68 * scale), (int)Math.Round(76 * scale));
     }
 
+    private void ApplyBackground()
+    {
+        TransparencyKey = _settings.TransparentBackground ? TransparencyKeyColor : Color.Empty;
+        Invalidate();
+    }
+
     protected override void OnDpiChanged(DpiChangedEventArgs e)
     {
         base.OnDpiChanged(e);
@@ -504,6 +522,7 @@ public partial class MainForm : Form
     {
         base.OnHandleCreated(e);
         ApplyDpiSize();
+        ApplyBackground();
         if (_settings.WindowX is int wx && _settings.WindowY is int wy &&
             Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(new Rectangle(wx, wy, Width, Height))))
         {

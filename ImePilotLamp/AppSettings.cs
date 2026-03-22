@@ -26,6 +26,16 @@ internal class AppSettings
     public int? WindowY { get; set; } = null;
 
     /// <summary>
+    /// Background color of the pilot lamp window (ARGB). Ignored when TransparentBackground is true.
+    /// </summary>
+    public int BackColorArgb { get; set; } = unchecked((int)0xFF1C1C1C);
+
+    /// <summary>
+    /// When true, the window background is fully transparent; only the lamp and text are visible.
+    /// </summary>
+    public bool TransparentBackground { get; set; } = false;
+
+    /// <summary>
     /// Duration in seconds for the fade-out effect after the window moves via follow-focus.
     /// 0 means no fade-out.
     /// </summary>

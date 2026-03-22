@@ -9,6 +9,7 @@ partial class MainForm
         components = new System.ComponentModel.Container();
         SuspendLayout();
 
+        AllowTransparency = true;
         AutoScaleMode = AutoScaleMode.None;
         BackColor = Color.FromArgb(28, 28, 28);
         ClientSize = new Size(68, 76);
