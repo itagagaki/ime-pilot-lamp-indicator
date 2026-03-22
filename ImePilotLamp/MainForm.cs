@@ -87,6 +87,13 @@ public partial class MainForm : Form
 
         _imeOn = newState;
         UpdateTrayIcon();
+        if (Visible && Opacity < 1.0)
+        {
+            // Show and fade-out again
+            _fadeTimer.Stop();
+            Opacity = 1.0;
+            _fadeTimer.Start();
+        }
         Invalidate();
     }
 
@@ -309,14 +316,14 @@ public partial class MainForm : Form
         var workArea = screen.WorkingArea;
 
         int x = cursorPos.X - Width / 2;
-        int y = cursorPos.Y + offsetY;
+        int y = cursorPos.Y - Height - offsetY;
 
         // Clamp horizontally within the working area
         x = Math.Max(workArea.Left, Math.Min(x, workArea.Right - Width));
 
-        // Prefer below the cursor; fall back to above if it would go off-screen
-        if (y + Height > workArea.Bottom)
-            y = cursorPos.Y - Height - offsetY;
+        // Prefer avobe the cursor; fall back to below if it would go off-screen
+        if (y < workArea.Top)
+            y = cursorPos.Y + offsetY;
 
         // Final vertical clamp
         y = Math.Max(workArea.Top, Math.Min(y, workArea.Bottom - Height));
@@ -353,12 +360,15 @@ public partial class MainForm : Form
         }
     }
 
+#if false
+    // Optional: cancel fade-out and restore full opacity when the user hovers over the window
     protected override void OnMouseEnter(EventArgs e)
     {
         _fadeTimer.Stop();
         Opacity = 1.0;
         base.OnMouseEnter(e);
     }
+#endif
 
     // -----------------------------------------------------------------------
     // IME toggle
@@ -448,6 +458,11 @@ public partial class MainForm : Form
 
     private void ToggleVisibility()
     {
+        if (Opacity <= 0.0)
+        {
+            // Treat as "currently hidden"
+            Visible = false;
+        }
         if (!Visible)
         {
             _fadeTimer.Stop();
