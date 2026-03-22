@@ -32,6 +32,7 @@ public partial class MainForm : Form
 
     // Settings
     private readonly AppSettings _settings = AppSettings.Load();
+    private SettingsForm? _settingsForm;
 
     // Follow-focus mouse hook state
     private NativeMethods.HookProc? _mouseHookProc; // Held to prevent GC collection
@@ -408,13 +409,27 @@ public partial class MainForm : Form
 
     private void OpenSettings()
     {
-        using var form = new SettingsForm(_settings);
-        if (form.ShowDialog(this) == DialogResult.OK)
+        if (_settingsForm != null)
         {
-            _settings.FollowFocus = form.FollowFocus;
-            _settings.FadeOutSeconds = form.FadeOutSeconds;
-            _settings.Save();
-            ApplySettings();
+            _settingsForm.Activate();
+            return;
+        }
+
+        using var form = new SettingsForm(_settings);
+        _settingsForm = form;
+        try
+        {
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                _settings.FollowFocus = form.FollowFocus;
+                _settings.FadeOutSeconds = form.FadeOutSeconds;
+                _settings.Save();
+                ApplySettings();
+            }
+        }
+        finally
+        {
+            _settingsForm = null;
         }
     }
 
