@@ -19,6 +19,12 @@ internal class AppSettings
     /// </summary>
     public bool FollowFocus { get; set; } = false;
 
+    /// <summary>
+    /// Last saved window position. Null means "use the default position".
+    /// </summary>
+    public int? WindowX { get; set; } = null;
+    public int? WindowY { get; set; } = null;
+
     public static AppSettings Load()
     {
         try

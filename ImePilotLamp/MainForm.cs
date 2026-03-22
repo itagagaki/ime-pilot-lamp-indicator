@@ -35,6 +35,13 @@ public partial class MainForm : Form
     {
         InitializeComponent();
 
+        // Restore the last saved window position if it is still on screen
+        if (_settings.WindowX is int wx && _settings.WindowY is int wy &&
+            Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(new Rectangle(wx, wy, Width, Height))))
+        {
+            Location = new Point(wx, wy);
+        }
+
         // Poll IME state every 100 ms
         _pollTimer = new System.Windows.Forms.Timer { Interval = 100 };
         _pollTimer.Tick += PollTimer_Tick;
@@ -356,6 +363,9 @@ public partial class MainForm : Form
 
     private void CleanUp()
     {
+        _settings.WindowX = Location.X;
+        _settings.WindowY = Location.Y;
+        _settings.Save();
         _pollTimer.Stop();
         UninstallMouseHook();
         _notifyIcon.Visible = false;
