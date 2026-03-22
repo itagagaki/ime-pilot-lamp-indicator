@@ -165,19 +165,27 @@ public partial class MainForm : Form
 
         if (_imeOn)
         {
-            // Outer glow
-            int glowPad = (int)(6 * scale);
-            var glowRect = new RectangleF(
-                lampX - glowPad, lampY - glowPad,
-                lampDiameter + glowPad * 2, lampDiameter + glowPad * 2);
-            using var glowPath = new System.Drawing.Drawing2D.GraphicsPath();
-            glowPath.AddEllipse(glowRect);
-            using var glowBrush = new PathGradientBrush(glowPath)
+            // Outer glow – concentric opaque ellipses drawn from outer (background colour)
+            // to inner (bright green), so the halo is brightest at the lamp rim and fades
+            // outward without relying on alpha compositing (unreliable with AllowTransparency).
             {
-                CenterColor = Color.FromArgb(160, Color.LimeGreen),
-                SurroundColors = new[] { Color.Transparent }
-            };
-            g.FillEllipse(glowBrush, glowRect);
+                int maxGlowPad = (int)(10 * scale);
+                Color glowBg = _settings.TransparentBackground
+                    ? TransparencyKeyColor
+                    : Color.FromArgb(_settings.BackColorArgb);
+                Color glowFg = Color.FromArgb(120, 255, 120);
+                for (int pad = maxGlowPad; pad >= 1; pad--)
+                {
+                    float t = (float)pad / maxGlowPad;   // 1.0 = outermost → bgColor, 0 → glowFg
+                    int rVal = (int)(glowBg.R + (glowFg.R - glowBg.R) * (1f - t));
+                    int gVal = (int)(glowBg.G + (glowFg.G - glowBg.G) * (1f - t));
+                    int bVal = (int)(glowBg.B + (glowFg.B - glowBg.B) * (1f - t));
+                    var layerRect = new RectangleF(lampX - pad, lampY - pad, lampDiameter + pad * 2, lampDiameter + pad * 2);
+                    using var layerBrush = new SolidBrush(Color.FromArgb(
+                        Math.Clamp(rVal, 0, 255), Math.Clamp(gVal, 0, 255), Math.Clamp(bVal, 0, 255)));
+                    g.FillEllipse(layerBrush, layerRect);
+                }
+            }
 
             // Lamp body – radial gradient: white centre → bright green edge
             using var lampPath = new System.Drawing.Drawing2D.GraphicsPath();
