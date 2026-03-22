@@ -25,6 +25,12 @@ internal class AppSettings
     public int? WindowX { get; set; } = null;
     public int? WindowY { get; set; } = null;
 
+    /// <summary>
+    /// Duration in seconds for the fade-out effect after the window moves via follow-focus.
+    /// 0 means no fade-out.
+    /// </summary>
+    public double FadeOutSeconds { get; set; } = 0.5;
+
     public static AppSettings Load()
     {
         try

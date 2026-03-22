@@ -13,15 +13,19 @@ namespace ImePilotLamp;
 public partial class MainForm : Form
 {
     private readonly System.Windows.Forms.Timer _pollTimer;
+    private readonly System.Windows.Forms.Timer _fadeTimer;
     private readonly NotifyIcon _notifyIcon;
     private const int ToggleVisibilityHotkeyId = 1;
 
-    private const int WS_POPUP        = unchecked((int)0x80000000);
-    private const int WS_EX_NOACTIVATE = 0x08000000;
+    private const int    WS_POPUP        = unchecked((int)0x80000000);
+    private const int    WS_EX_NOACTIVATE = 0x08000000;
+    private const double FadeMinOpacity  = 0.0;
+    private const int    FadeIntervalMs  = 50;
 
     private bool _imeOn;
     private Point _dragOffset;
     private bool _dragging;
+    private double _fadeStep;
 
     // Remember the last foreground window that wasn't our own indicator
     private IntPtr _lastForeignWindow = IntPtr.Zero;
@@ -44,6 +48,10 @@ public partial class MainForm : Form
         _pollTimer = new System.Windows.Forms.Timer { Interval = 100 };
         _pollTimer.Tick += PollTimer_Tick;
         _pollTimer.Start();
+
+        // Fade-out timer (fires every 50 ms to gradually reduce opacity after follow-focus move)
+        _fadeTimer = new System.Windows.Forms.Timer { Interval = FadeIntervalMs };
+        _fadeTimer.Tick += FadeTimer_Tick;
 
         // System tray icon so the app is accessible even when the window is hidden
         _notifyIcon = new NotifyIcon { Text = "IME Pilot Lamp Indicator", Visible = true };
@@ -293,6 +301,8 @@ public partial class MainForm : Form
 
     private void MoveNearCursor(Point cursorPos)
     {
+        _fadeTimer.Stop();
+        Opacity = 1.0;
         const int offsetY = 20;
 
         var screen = Screen.FromPoint(cursorPos);
@@ -314,6 +324,40 @@ public partial class MainForm : Form
         Location = new Point(x, y);
         if (!Visible) Visible = true;
         BringToFront();
+        StartFadeOut();
+    }
+
+    // -----------------------------------------------------------------------
+    // Fade-out after follow-focus move
+    // -----------------------------------------------------------------------
+
+    private void StartFadeOut()
+    {
+        if (_settings.FadeOutSeconds <= 0) return;
+        int steps = (int)Math.Max(1, _settings.FadeOutSeconds * 1000 / FadeIntervalMs);
+        _fadeStep = (1.0 - FadeMinOpacity) / steps;
+        _fadeTimer.Start();
+    }
+
+    private void FadeTimer_Tick(object? sender, EventArgs e)
+    {
+        double newOpacity = Opacity - _fadeStep;
+        if (newOpacity <= FadeMinOpacity)
+        {
+            Opacity = FadeMinOpacity;
+            _fadeTimer.Stop();
+        }
+        else
+        {
+            Opacity = newOpacity;
+        }
+    }
+
+    protected override void OnMouseEnter(EventArgs e)
+    {
+        _fadeTimer.Stop();
+        Opacity = 1.0;
+        base.OnMouseEnter(e);
     }
 
     // -----------------------------------------------------------------------
@@ -358,6 +402,7 @@ public partial class MainForm : Form
         if (form.ShowDialog(this) == DialogResult.OK)
         {
             _settings.FollowFocus = form.FollowFocus;
+            _settings.FadeOutSeconds = form.FadeOutSeconds;
             _settings.Save();
             ApplySettings();
         }
@@ -403,6 +448,11 @@ public partial class MainForm : Form
 
     private void ToggleVisibility()
     {
+        if (!Visible)
+        {
+            _fadeTimer.Stop();
+            Opacity = 1.0;
+        }
         Visible = !Visible;
         if (Visible) BringToFront();
     }
@@ -459,6 +509,7 @@ public partial class MainForm : Form
         _settings.Save();
         NativeMethods.UnregisterHotKey(Handle, ToggleVisibilityHotkeyId);
         _pollTimer.Stop();
+        _fadeTimer.Stop();
         UninstallMouseHook();
         _notifyIcon.Visible = false;
     }
@@ -468,6 +519,7 @@ public partial class MainForm : Form
         if (disposing)
         {
             _pollTimer?.Dispose();
+            _fadeTimer?.Dispose();
             _notifyIcon?.Dispose();
         }
         base.Dispose(disposing);
