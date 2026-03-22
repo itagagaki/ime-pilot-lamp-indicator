@@ -16,6 +16,9 @@ public partial class MainForm : Form
     private readonly NotifyIcon _notifyIcon;
     private const int ToggleVisibilityHotkeyId = 1;
 
+    private const int WS_POPUP        = unchecked((int)0x80000000);
+    private const int WS_EX_NOACTIVATE = 0x08000000;
+
     private bool _imeOn;
     private Point _dragOffset;
     private bool _dragging;
@@ -36,13 +39,6 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
-
-        // Restore the last saved window position if it is still on screen
-        if (_settings.WindowX is int wx && _settings.WindowY is int wy &&
-            Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(new Rectangle(wx, wy, Width, Height))))
-        {
-            Location = new Point(wx, wy);
-        }
 
         // Poll IME state every 100 ms
         _pollTimer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -130,6 +126,8 @@ public partial class MainForm : Form
     {
         base.OnPaint(e);
 
+        float scale = DeviceDpi / 96.0f;
+
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
@@ -138,15 +136,15 @@ public partial class MainForm : Form
         g.Clear(Color.FromArgb(28, 28, 28));
 
         // --- Lamp circle (centred horizontally, near the top) ---
-        int lampDiameter = 44;
+        int lampDiameter = (int)(44 * scale);
         int lampX = (ClientSize.Width - lampDiameter) / 2;
-        int lampY = 10;
+        int lampY = (int)(10 * scale);
         var lampRect = new RectangleF(lampX, lampY, lampDiameter, lampDiameter);
 
         if (_imeOn)
         {
             // Outer glow
-            int glowPad = 6;
+            int glowPad = (int)(6 * scale);
             var glowRect = new RectangleF(
                 lampX - glowPad, lampY - glowPad,
                 lampDiameter + glowPad * 2, lampDiameter + glowPad * 2);
@@ -179,7 +177,7 @@ public partial class MainForm : Form
             g.DrawEllipse(rimPen, lampRect);
 
             // Small highlight to give a "glass" feel even when off
-            var hlRect = new RectangleF(lampX + 7, lampY + 6, lampDiameter * 0.35f, lampDiameter * 0.25f);
+            var hlRect = new RectangleF(lampX + 7 * scale, lampY + 6 * scale, lampDiameter * 0.35f, lampDiameter * 0.25f);
             using var hlBrush = new SolidBrush(Color.FromArgb(30, 255, 255, 255));
             g.FillEllipse(hlBrush, hlRect);
         }
@@ -191,7 +189,7 @@ public partial class MainForm : Form
         using var textBrush = new SolidBrush(textColor);
         var textSize = g.MeasureString(statusText, font);
         float textX = (ClientSize.Width - textSize.Width) / 2f;
-        float textY = lampY + lampDiameter + 5;
+        float textY = lampY + lampDiameter + 5 * scale;
         g.DrawString(statusText, font, textBrush, textX, textY);
 
         // --- Thin border around the whole window ---
@@ -377,6 +375,17 @@ public partial class MainForm : Form
     // Window closing / exit
     // -----------------------------------------------------------------------
 
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var cp = base.CreateParams;
+            cp.Style  |= WS_POPUP;         // Popup window: no Windows-imposed minimum width
+            cp.ExStyle |= WS_EX_NOACTIVATE; // Never steal keyboard focus on click
+            return cp;
+        }
+    }
+
     /// <summary>Minimise to tray instead of closing when the user presses the close button.</summary>
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
@@ -398,9 +407,33 @@ public partial class MainForm : Form
         if (Visible) BringToFront();
     }
 
+    private void ApplyDpiSize()
+    {
+        float scale = DeviceDpi / 96.0f;
+        ClientSize = new Size((int)Math.Round(68 * scale), (int)Math.Round(76 * scale));
+    }
+
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        ApplyDpiSize();
+        Invalidate();
+    }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
+        ApplyDpiSize();
+        if (_settings.WindowX is int wx && _settings.WindowY is int wy &&
+            Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(new Rectangle(wx, wy, Width, Height))))
+        {
+            Location = new Point(wx, wy);
+        }
+        else
+        {
+            var workArea = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+            Location = new Point(workArea.Right - Width - 12, workArea.Top + 12);
+        }
         NativeMethods.RegisterHotKey(Handle, ToggleVisibilityHotkeyId,
             NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT, (uint)Keys.L);
     }
