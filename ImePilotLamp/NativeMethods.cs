@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ImePilotLamp;
 
@@ -66,4 +67,8 @@ internal static class NativeMethods
     /// <summary>Passes the hook information to the next hook in the chain.</summary>
     [DllImport("user32.dll")]
     internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>Retrieves the name of the class to which the specified window belongs.</summary>
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    internal static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 }

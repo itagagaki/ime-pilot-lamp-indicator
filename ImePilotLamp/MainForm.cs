@@ -1,5 +1,6 @@
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ImePilotLamp;
 
@@ -96,7 +97,8 @@ public partial class MainForm : Form
             if (foreground != _lastForeignWindow)
             {
                 if (_settings.FollowFocus && _pendingMouseClick &&
-                    (DateTime.UtcNow - _mouseClickTime).TotalSeconds < 2.0)
+                    (DateTime.UtcNow - _mouseClickTime).TotalSeconds < 2.0 &&
+                    !IsDesktopOrTaskbar(foreground))
                 {
                     MoveNearCursor(_mouseClickPoint);
                 }
@@ -280,6 +282,14 @@ public partial class MainForm : Form
             _mouseClickTime = DateTime.UtcNow;
         }
         return NativeMethods.CallNextHookEx(_mouseHook, nCode, wParam, lParam);
+    }
+
+    private static bool IsDesktopOrTaskbar(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero) return false;
+        var sb = new StringBuilder(64);
+        NativeMethods.GetClassName(hwnd, sb, sb.Capacity);
+        return sb.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
     }
 
     private void MoveNearCursor(Point cursorPos)
