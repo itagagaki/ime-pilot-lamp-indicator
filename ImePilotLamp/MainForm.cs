@@ -257,6 +257,8 @@ public partial class MainForm : Form
         {
             _dragging = true;
             _dragOffset = e.Location;
+            _fadeTimer.Stop();
+            Opacity = 1.0;
         }
         base.OnMouseDown(e);
     }

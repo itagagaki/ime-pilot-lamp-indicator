@@ -39,7 +39,7 @@ internal class AppSettings
     /// Duration in seconds for the fade-out effect after the window moves via follow-focus.
     /// 0 means no fade-out.
     /// </summary>
-    public double FadeOutSeconds { get; set; } = 0.5;
+    public double FadeOutSeconds { get; set; } = 1.5;
 
     public static AppSettings Load()
     {
