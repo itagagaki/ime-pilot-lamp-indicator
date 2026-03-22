@@ -14,6 +14,7 @@ public partial class MainForm : Form
 {
     private readonly System.Windows.Forms.Timer _pollTimer;
     private readonly NotifyIcon _notifyIcon;
+    private const int ToggleVisibilityHotkeyId = 1;
 
     private bool _imeOn;
     private Point _dragOffset;
@@ -53,14 +54,14 @@ public partial class MainForm : Form
         UpdateTrayIcon();
 
         var contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add("Show / Hide", null, (_, _) => ToggleVisibility());
+        contextMenu.Items.Add("Show / Hide  (Ctrl+Alt+L)", null, (_, _) => ToggleVisibility());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("設定...", null, (_, _) => OpenSettings());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
 
         _notifyIcon.ContextMenuStrip = contextMenu;
-        _notifyIcon.DoubleClick += (_, _) => ToggleVisibility();
+        _notifyIcon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) ToggleIme(); };
 
         // Draw the initial (OFF) state
         UpdateImeState();
@@ -318,6 +319,38 @@ public partial class MainForm : Form
     }
 
     // -----------------------------------------------------------------------
+    // IME toggle
+    // -----------------------------------------------------------------------
+
+    private void ToggleIme()
+    {
+        _pendingMouseClick = false;
+        IntPtr target = _lastForeignWindow;
+        if (target == IntPtr.Zero)
+        {
+            target = NativeMethods.GetForegroundWindow();
+            if (target == Handle || target == IntPtr.Zero) return;
+        }
+
+        IntPtr imeWnd = NativeMethods.ImmGetDefaultIMEWnd(target);
+        if (imeWnd == IntPtr.Zero) return;
+
+        bool current = NativeMethods.SendMessage(
+            imeWnd,
+            NativeMethods.WM_IME_CONTROL,
+            (IntPtr)NativeMethods.IMC_GETOPENSTATUS,
+            IntPtr.Zero) != IntPtr.Zero;
+
+        NativeMethods.SendMessage(
+            imeWnd,
+            NativeMethods.WM_IME_CONTROL,
+            (IntPtr)NativeMethods.IMC_SETOPENSTATUS,
+            (IntPtr)(current ? 0 : 1));
+
+        UpdateImeState();
+    }
+
+    // -----------------------------------------------------------------------
     // Settings
     // -----------------------------------------------------------------------
 
@@ -365,6 +398,21 @@ public partial class MainForm : Form
         if (Visible) BringToFront();
     }
 
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        NativeMethods.RegisterHotKey(Handle, ToggleVisibilityHotkeyId,
+            NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT, (uint)Keys.L);
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == NativeMethods.WM_HOTKEY && m.WParam.ToInt32() == ToggleVisibilityHotkeyId)
+            ToggleVisibility();
+        else
+            base.WndProc(ref m);
+    }
+
     private void ExitApplication()
     {
         CleanUp();
@@ -376,6 +424,7 @@ public partial class MainForm : Form
         _settings.WindowX = Location.X;
         _settings.WindowY = Location.Y;
         _settings.Save();
+        NativeMethods.UnregisterHotKey(Handle, ToggleVisibilityHotkeyId);
         _pollTimer.Stop();
         UninstallMouseHook();
         _notifyIcon.Visible = false;

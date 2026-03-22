@@ -14,11 +14,23 @@ internal static class NativeMethods
     /// <summary>Subcommand: get the open/close status of the IME.</summary>
     internal const int IMC_GETOPENSTATUS = 0x0005;
 
+    /// <summary>Subcommand: set the open/close status of the IME.</summary>
+    internal const int IMC_SETOPENSTATUS = 0x0006;
+
     /// <summary>Low-level mouse hook identifier.</summary>
     internal const int WH_MOUSE_LL = 14;
 
     /// <summary>Posted when the left mouse button is pressed.</summary>
     internal const int WM_LBUTTONDOWN = 0x0201;
+
+    /// <summary>Posted to a window when a registered hotkey is pressed.</summary>
+    internal const int WM_HOTKEY = 0x0312;
+
+    /// <summary>Modifier flag for RegisterHotKey: Control key.</summary>
+    internal const uint MOD_CONTROL = 0x0002;
+
+    /// <summary>Modifier flag for RegisterHotKey: Alt key.</summary>
+    internal const uint MOD_ALT = 0x0001;
 
     /// <summary>Callback delegate used with SetWindowsHookEx.</summary>
     internal delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
@@ -71,4 +83,14 @@ internal static class NativeMethods
     /// <summary>Retrieves the name of the class to which the specified window belongs.</summary>
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     internal static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    /// <summary>Registers a system-wide hotkey.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    /// <summary>Removes a hotkey registration.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 }
