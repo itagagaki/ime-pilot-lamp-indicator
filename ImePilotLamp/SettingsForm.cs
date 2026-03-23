@@ -20,6 +20,8 @@ internal partial class SettingsForm : Form
     public SettingsForm(AppSettings settings)
     {
         InitializeComponent();
+        var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
+        Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + (wa.Height - Height) / 2);
         _chkFollowFocus.Checked = settings.FollowFocus;
         _trkFadeOut.Value = (int)Math.Round(Math.Clamp(settings.FadeOutSeconds * 10, 0.0, 30.0));
         UpdateFadeLabel();

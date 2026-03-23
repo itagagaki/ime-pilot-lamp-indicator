@@ -164,7 +164,7 @@ partial class SettingsForm
         MinimizeBox = false;
         Name = "SettingsForm";
         ShowInTaskbar = false;
-        StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+        StartPosition = System.Windows.Forms.FormStartPosition.Manual;
         Text = "設定 - IME Pilot Lamp";
         _grpFollowFocus.ResumeLayout(false);
         _grpFollowFocus.PerformLayout();
