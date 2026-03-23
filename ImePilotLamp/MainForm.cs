@@ -83,10 +83,11 @@ public partial class MainForm : Form
         UpdateTrayIcon();
         if (Visible && Opacity < 1.0)
         {
-            // Show and fade-out again
+            // Restore visibility; re-fade only when follow-focus is still active
             _fadeTimer.Stop();
             Opacity = 1.0;
-            _fadeTimer.Start();
+            if (_settings.FollowFocus)
+                StartFadeOut();
         }
         Invalidate();
     }
@@ -416,6 +417,11 @@ public partial class MainForm : Form
     private void ApplySettings()
     {
         ApplyBackground();
+        if (!_settings.FollowFocus)
+        {
+            _fadeTimer.Stop();
+            Opacity = 1.0;
+        }
     }
 
     // -----------------------------------------------------------------------
