@@ -11,7 +11,7 @@ A lightweight Windows desktop application that shows the current **IME (Input Me
 - **IME toggle**: left-click the tray icon to toggle IME ON/OFF in the currently active application
 - **Global hotkey**: `Ctrl+Alt+L` toggles the indicator window visibility
 - **Draggable**: left-click and drag the window anywhere on screen
-- **Follow-focus** (optional): automatically moves the indicator near the mouse cursor whenever the active window changes via a mouse click
+- **Follow-focus** (optional): automatically moves the indicator near the mouse cursor whenever the active window changes (mouse click, Alt+Tab, taskbar, etc.)
 - **Fade-out** (optional): after a follow-focus move, the window gradually fades out over a configurable duration (0–3 s)
 - **Customizable background**: choose any background color, or enable transparent mode to show only the lamp and label with no background
 - **DPI-aware**: scales correctly on high-DPI / multi-monitor setups
@@ -68,7 +68,7 @@ Run `ImePilotLamp.exe`. The pilot lamp appears in the top-right corner of your s
 
 | Setting | Description |
 |---------|-------------|
-| Follow-focus | Move the indicator near the cursor when the active window changes via a mouse click |
+| Follow-focus | Move the indicator near the cursor whenever the active window changes |
 | Fade-out | Duration (0–3 s) before the indicator fades out after a follow-focus move; 0 = disabled |
 | Background color | Choose a custom background color with the color picker |
 | Transparent background | Remove the background entirely; only the lamp and label are visible |
@@ -84,7 +84,7 @@ Settings are saved automatically to `%AppData%\ImePilotLamp\settings.json`.
 5. A non-zero return value means IME is open (ON); zero means closed (OFF).
 6. The indicator repaints only when the state actually changes.
 
-When **follow-focus** is enabled, a low-level mouse hook (`WH_MOUSE_LL`) records each left-button click. If the foreground window changes within 2 seconds of a click (and the new window is not the desktop or taskbar), the indicator moves above the cursor. A configurable fade-out timer then gradually reduces the window's opacity.
+When **follow-focus** is enabled, any foreground window change (mouse click, Alt+Tab, taskbar click, etc.) moves the indicator above the current cursor position, as long as the new window is not the desktop or taskbar. A configurable fade-out timer then gradually reduces the window's opacity.
 
 ## Project structure
 

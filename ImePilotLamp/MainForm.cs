@@ -1,5 +1,4 @@
 using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ImePilotLamp;
@@ -38,13 +37,6 @@ public partial class MainForm : Form
     private readonly AppSettings _settings = AppSettings.Load();
     private SettingsForm? _settingsForm;
 
-    // Follow-focus mouse hook state
-    private NativeMethods.HookProc? _mouseHookProc; // Held to prevent GC collection
-    private IntPtr _mouseHook = IntPtr.Zero;
-    private bool _pendingMouseClick;
-    private Point _mouseClickPoint;
-    private DateTime _mouseClickTime;
-
     public MainForm()
     {
         InitializeComponent();
@@ -74,9 +66,6 @@ public partial class MainForm : Form
 
         // Draw the initial (OFF) state
         UpdateImeState();
-
-        if (_settings.FollowFocus)
-            InstallMouseHook();
     }
 
     // -----------------------------------------------------------------------
@@ -106,22 +95,15 @@ public partial class MainForm : Form
     {
         IntPtr foreground = NativeMethods.GetForegroundWindow();
 
-        // Ignore our own window to avoid disturbing the last-known state
-        if (foreground == Handle || foreground == IntPtr.Zero)
+        // Skip windows that belong to this process (main form, settings dialog,
+        // context menus, etc.) to avoid triggering spurious follow-focus moves.
+        if (foreground == IntPtr.Zero || IsOwnWindow(foreground))
             foreground = _lastForeignWindow;
-        else
+        else if (foreground != _lastForeignWindow)
         {
-            if (foreground != _lastForeignWindow)
-            {
-                if (_settings.FollowFocus && _pendingMouseClick &&
-                    (DateTime.UtcNow - _mouseClickTime).TotalSeconds < 2.0 &&
-                    !IsDesktopOrTaskbar(foreground))
-                {
-                    MoveNearCursor(_mouseClickPoint);
-                }
-                _pendingMouseClick = false;
-                _lastForeignWindow = foreground;
-            }
+            if (_settings.FollowFocus && !IsDesktopOrTaskbar(foreground))
+                MoveNearCursor(Cursor.Position);
+            _lastForeignWindow = foreground;
         }
 
         if (foreground == IntPtr.Zero) return false;
@@ -287,36 +269,8 @@ public partial class MainForm : Form
     }
 
     // -----------------------------------------------------------------------
-    // Follow-focus – low-level mouse hook
+    // Follow-focus
     // -----------------------------------------------------------------------
-
-    private void InstallMouseHook()
-    {
-        if (_mouseHook != IntPtr.Zero) return;
-        _mouseHookProc = MouseHookCallback;
-        _mouseHook = NativeMethods.SetWindowsHookEx(
-            NativeMethods.WH_MOUSE_LL, _mouseHookProc, IntPtr.Zero, 0);
-    }
-
-    private void UninstallMouseHook()
-    {
-        if (_mouseHook == IntPtr.Zero) return;
-        NativeMethods.UnhookWindowsHookEx(_mouseHook);
-        _mouseHook = IntPtr.Zero;
-        _mouseHookProc = null;
-    }
-
-    private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-    {
-        if (nCode >= 0 && (int)wParam == NativeMethods.WM_LBUTTONDOWN)
-        {
-            var hs = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-            _pendingMouseClick = true;
-            _mouseClickPoint = new Point(hs.pt.x, hs.pt.y);
-            _mouseClickTime = DateTime.UtcNow;
-        }
-        return NativeMethods.CallNextHookEx(_mouseHook, nCode, wParam, lParam);
-    }
 
     private static bool IsDesktopOrTaskbar(IntPtr hwnd)
     {
@@ -324,6 +278,12 @@ public partial class MainForm : Form
         var sb = new StringBuilder(64);
         NativeMethods.GetClassName(hwnd, sb, sb.Capacity);
         return sb.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
+    }
+
+    private static bool IsOwnWindow(IntPtr hwnd)
+    {
+        NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
+        return pid == (uint)Environment.ProcessId;
     }
 
     private void MoveNearCursor(Point cursorPos)
@@ -396,7 +356,6 @@ public partial class MainForm : Form
 
     private void ToggleIme()
     {
-        _pendingMouseClick = false;
         IntPtr target = _lastForeignWindow;
         if (target == IntPtr.Zero)
         {
@@ -456,10 +415,6 @@ public partial class MainForm : Form
 
     private void ApplySettings()
     {
-        if (_settings.FollowFocus)
-            InstallMouseHook();
-        else
-            UninstallMouseHook();
         ApplyBackground();
     }
 
@@ -569,7 +524,6 @@ public partial class MainForm : Form
         NativeMethods.UnregisterHotKey(Handle, ToggleVisibilityHotkeyId);
         _pollTimer.Stop();
         _fadeTimer.Stop();
-        UninstallMouseHook();
         _notifyIcon.Visible = false;
     }
 

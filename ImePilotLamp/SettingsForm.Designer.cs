@@ -57,7 +57,7 @@ partial class SettingsForm
         _lblDescription.Location = new System.Drawing.Point(12, 22);
         _lblDescription.Name = "_lblDescription";
         _lblDescription.Size = new System.Drawing.Size(376, 46);
-        _lblDescription.Text = "マウスクリックによってアクティブなウィンドウが移動したとき、IMEパイロットランプウィンドウをマウスポインターの近くへ自動的に移動します。";
+        _lblDescription.Text = "アクティブなウィンドウが切り替わったとき、IMEパイロットランプウィンドウをマウスポインターの近くへ自動的に移動します。";
 
         // _chkFollowFocus
         _chkFollowFocus.AutoSize = true;

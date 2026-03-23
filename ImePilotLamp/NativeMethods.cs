@@ -17,12 +17,6 @@ internal static class NativeMethods
     /// <summary>Subcommand: set the open/close status of the IME.</summary>
     internal const int IMC_SETOPENSTATUS = 0x0006;
 
-    /// <summary>Low-level mouse hook identifier.</summary>
-    internal const int WH_MOUSE_LL = 14;
-
-    /// <summary>Posted when the left mouse button is pressed.</summary>
-    internal const int WM_LBUTTONDOWN = 0x0201;
-
     /// <summary>Posted to a window when a registered hotkey is pressed.</summary>
     internal const int WM_HOTKEY = 0x0312;
 
@@ -31,24 +25,6 @@ internal static class NativeMethods
 
     /// <summary>Modifier flag for RegisterHotKey: Alt key.</summary>
     internal const uint MOD_ALT = 0x0001;
-
-    /// <summary>Callback delegate used with SetWindowsHookEx.</summary>
-    internal delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-    /// <summary>Screen coordinates used in low-level hook structs.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct POINT { public int x; public int y; }
-
-    /// <summary>Data received by a low-level mouse hook procedure.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct MSLLHOOKSTRUCT
-    {
-        public POINT pt;
-        public uint mouseData;
-        public uint flags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
 
     /// <summary>Returns the handle to the foreground window (the window with which the user is currently working).</summary>
     [DllImport("user32.dll")]
@@ -67,22 +43,13 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool DestroyIcon(IntPtr hIcon);
 
-    /// <summary>Installs a system-wide hook procedure.</summary>
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
-
-    /// <summary>Removes a hook procedure installed by SetWindowsHookEx.</summary>
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-    /// <summary>Passes the hook information to the next hook in the chain.</summary>
-    [DllImport("user32.dll")]
-    internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
     /// <summary>Retrieves the name of the class to which the specified window belongs.</summary>
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     internal static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    /// <summary>Retrieves the identifier of the thread and process that created the specified window.</summary>
+    [DllImport("user32.dll")]
+    internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
     /// <summary>Registers a system-wide hotkey.</summary>
     [DllImport("user32.dll")]
