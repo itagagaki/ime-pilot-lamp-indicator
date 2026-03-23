@@ -2,6 +2,14 @@
 
 A lightweight Windows desktop application that shows the current **IME (Input Method Editor) state** — **ON** or **OFF** — as a glowing pilot-lamp indicator.
 
+This application aims to reduce the frustration of starting to type, only to realise that the IME is either on or off.
+
+Ideally, you would be able to see whether the IME is on or off right at the text input cursor or nearby.
+Unfortunately, however, this is not possible in Windows unless the individual applications implement this functionality themselves.
+
+Unfortunately, this app doesn't resolve the issue either. However, it has a more intuitive pilot lamp than the IME toolbar,
+as well as an optional feature that moves the lamp to near the mouse pointer  (unfortunately not the text input cursor) when the active window changes.
+
 ## Features
 
 - **Always-on-top** borderless mini-window, positioned in the top-right corner by default; position is saved between sessions
