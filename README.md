@@ -119,6 +119,7 @@ Run `ImePilotLamp.exe`. The pilot lamp appears in the top-right corner of your s
 |------|--------|
 | Show / Hide (Ctrl+Alt+L) | Toggle window visibility |
 | 設定… | Open settings dialog |
+| About | Show application name, version, and GitHub link |
 | Exit | Quit the application |
 
 ### Settings dialog
@@ -149,6 +150,7 @@ Settings are saved automatically to `%AppData%\ImePilotLamp\settings.json`.
 |------|------|
 | 表示 / 非表示 (Ctrl+Alt+L) | ウィンドウの表示・非表示を切り替え |
 | 設定… | 設定ダイアログを開く |
+| About | アプリ名・バージョン・GitHub リンクを表示 |
 | 終了 | アプリを終了 |
 
 ### 設定ダイアログ

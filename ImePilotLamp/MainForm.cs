@@ -58,6 +58,7 @@ public partial class MainForm : Form
         contextMenu.Items.Add("Show / Hide  (Ctrl+Alt+L)", null, (_, _) => ToggleVisibility());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("設定...", null, (_, _) => OpenSettings());
+        contextMenu.Items.Add("About", null, (_, _) => OpenAbout());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
 
@@ -385,6 +386,12 @@ public partial class MainForm : Form
     // -----------------------------------------------------------------------
     // Settings
     // -----------------------------------------------------------------------
+
+    private void OpenAbout()
+    {
+        using var form = new AboutForm();
+        form.ShowDialog(this);
+    }
 
     private void OpenSettings()
     {
