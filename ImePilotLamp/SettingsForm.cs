@@ -20,6 +20,8 @@ internal partial class SettingsForm : Form
     public SettingsForm(AppSettings settings)
     {
         InitializeComponent();
+        using var iconStream = typeof(SettingsForm).Assembly.GetManifestResourceStream("ImePilotLamp.app.ico");
+        if (iconStream is not null) Icon = new Icon(iconStream);
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
         Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + (wa.Height - Height) / 2);
         _chkFollowFocus.Checked = settings.FollowFocus;

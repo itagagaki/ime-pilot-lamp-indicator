@@ -36,10 +36,15 @@ public partial class MainForm : Form
     // Settings
     private readonly AppSettings _settings = AppSettings.Load();
     private SettingsForm? _settingsForm;
+    
+    // About
+    private AboutForm? _aboutForm;
 
     public MainForm()
     {
         InitializeComponent();
+        using var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("ImePilotLamp.app.ico");
+        if (iconStream is not null) Icon = new Icon(iconStream);
 
         // Poll IME state every 100 ms
         _pollTimer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -384,15 +389,32 @@ public partial class MainForm : Form
     }
 
     // -----------------------------------------------------------------------
-    // Settings
+    // About dialog
     // -----------------------------------------------------------------------
 
     private void OpenAbout()
     {
+        if (_aboutForm != null)
+        {
+            _aboutForm.Activate();
+            return;
+        }
+
         using var form = new AboutForm();
-        form.ShowDialog(this);
+        _aboutForm = form;
+        try
+        {
+            form.ShowDialog(this);
+        }
+        finally
+        {
+            _aboutForm = null;
+        }
     }
 
+    // -----------------------------------------------------------------------
+    // Settings
+    // -----------------------------------------------------------------------
     private void OpenSettings()
     {
         if (_settingsForm != null)

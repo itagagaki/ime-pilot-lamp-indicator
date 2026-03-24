@@ -26,36 +26,38 @@ partial class AboutForm
         _lblAppName.Font      = new System.Drawing.Font(Font.FontFamily, 11f, System.Drawing.FontStyle.Bold);
         _lblAppName.Location  = new System.Drawing.Point(12, 24);
         _lblAppName.Name      = "_lblAppName";
-        _lblAppName.Size      = new System.Drawing.Size(316, 28);
+        _lblAppName.Size      = new System.Drawing.Size(436, 28);
         _lblAppName.Text      = "IME Pilot Lamp Indicator";
         _lblAppName.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 
         // _lblVersion
         _lblVersion.Location  = new System.Drawing.Point(12, 60);
         _lblVersion.Name      = "_lblVersion";
-        _lblVersion.Size      = new System.Drawing.Size(316, 20);
+        _lblVersion.Size      = new System.Drawing.Size(436, 20);
         _lblVersion.Text      = "Version";
         _lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 
         // _lnkGitHub
         _lnkGitHub.Location  = new System.Drawing.Point(12, 88);
         _lnkGitHub.Name      = "_lnkGitHub";
-        _lnkGitHub.Size      = new System.Drawing.Size(316, 20);
+        _lnkGitHub.Size      = new System.Drawing.Size(436, 24);
         _lnkGitHub.Text      = "https://github.com/itagagaki/ime-pilot-lamp-indicator";
         _lnkGitHub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
         _lnkGitHub.LinkClicked += _lnkGitHub_LinkClicked;
 
         // _btnOk
         _btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
-        _btnOk.Location     = new System.Drawing.Point(130, 130);
+        _btnOk.Location     = new System.Drawing.Point(190, 132);
         _btnOk.Name         = "_btnOk";
         _btnOk.Size         = new System.Drawing.Size(80, 30);
         _btnOk.TabIndex     = 0;
         _btnOk.Text         = "OK";
 
         // AboutForm
-        AcceptButton   = _btnOk;
-        ClientSize     = new System.Drawing.Size(340, 178);
+        AcceptButton          = _btnOk;
+        AutoScaleDimensions   = new System.Drawing.SizeF(7F, 15F);
+        AutoScaleMode         = System.Windows.Forms.AutoScaleMode.Font;
+        ClientSize            = new System.Drawing.Size(460, 180);
         Controls.AddRange([_lblAppName, _lblVersion, _lnkGitHub, _btnOk]);
         FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
         MaximizeBox     = false;

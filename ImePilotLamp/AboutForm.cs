@@ -10,6 +10,8 @@ internal partial class AboutForm : Form
     public AboutForm()
     {
         InitializeComponent();
+        using var iconStream = typeof(AboutForm).Assembly.GetManifestResourceStream("ImePilotLamp.app.ico");
+        if (iconStream is not null) Icon = new Icon(iconStream);
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
         Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + (wa.Height - Height) / 2);
         _lblVersion.Text = $"Version {Application.ProductVersion.Split('+')[0]}";
