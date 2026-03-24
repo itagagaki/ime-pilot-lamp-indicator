@@ -88,18 +88,18 @@ dotnet build -c Release
 
 コンパイルされた実行ファイルは `ImePilotLamp/bin/Release/net8.0-windows/` に出力されます。
 
-## Publish (single-file, self-contained)
+## Publish (single-file, framework-dependent)
 
 ```bash
 cd ImePilotLamp
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish -c Release -r win-x64 -p:SelfContained=false -p:PublishSingleFile=true
 ```
 
-## パブリッシュ（単一ファイル・自己完結型）
+## パブリッシュ（単一ファイル・フレームワーク依存型）
 
 ```bash
 cd ImePilotLamp
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish -c Release -r win-x64 -p:SelfContained=false -p:PublishSingleFile=true
 ```
 
 ## Usage
